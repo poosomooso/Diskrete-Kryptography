@@ -1,12 +1,40 @@
 """ Modeled after https://github.com/andreacorbellini/ecc/blob/master/logs/common.py"""
 
+def inverse_mod(n, p):
+    """
+    Returns a n_inv such that (n * n_inv) === 1 modp
+    n must be nonzero and p must be prime
+    solved using the euclidean algorithm
+    """
+    if n == 0:
+        raise ZeroDivisionError()
+    if n < 0:
+        # wrap around
+        return p - inverse_mod(-n, p)
+
+    curr_s, prev_s = 0, 1
+    curr_r, prev_r = p, n
+
+    while curr_r != 1:
+        quotient = prev_r // curr_r
+        prev_r, curr_r = curr_r, (prev_r - quotient * curr_r)
+        prev_s, curr_s = curr_s, (prev_s - quotient * curr_s)
+
+    gcd, x = curr_r, curr_s
+
+    assert gcd == 1
+    assert (n * x) % p == 1
+
+    return x % p
+
 class EllipticCurve:
     """ Equation of the form y^2=x^3+ax+b """
     """ A point being None means that it is the point at infinity (e.g 0) """
-    def __init__(self):
+    def __init__(self, a, b, n):
         self.field = field
         self.a = a
         self.b = b
+        self.n = n
 
         # making sure the parameters are good
         assert pow(2, field - 1, field) == 1
@@ -14,7 +42,6 @@ class EllipticCurve:
 
     def add_pub_keys(g, n):
         self.g = g
-        self.n = n
 
         # make sure keys are valid
         assert self.is_on_curve(g)
@@ -52,6 +79,8 @@ class EllipticCurve:
             m = (3 * x1 * x1 + self.a) * inverse_mod(2 * y1, self.field)
         else:
             # line through both points
+            # same as finding the slope normally, but we need to use modular
+            # inverse instead of multiplicative inverse
             m = (y1 - y2) * inverse_mod(x1 - x2, self.field)
 
         x3 = m * m - x1 - x2
@@ -60,4 +89,39 @@ class EllipticCurve:
                   -y3 % self.field)
 
         assert self.is_on_curve(result)
+        return result
+
+    def neg_point(self, point):
+        """ Returns the negative point, i.e. x, -y """
+        if point is None:
+            return None
+
+        x, y = point
+        result = x, -y % self.field
+
+        assert self.is_on_curve(result)
+        return result
+
+    def mult_point(self, point, n):
+        """ returns n * point i.e. point added to itself n times """
+        
+        if n % self.n == 0 or point is None:
+            return None
+
+        if n < 0: # go the opposite way
+            return self.neg_point(self.mult(-n, point))
+
+        result = None
+        addend = point # addend is a fancy name for an addition operand
+
+        while n:
+            if n & 1:
+                result = self.add(result, addend)
+
+            # double the addend
+            addend = self.add_points(addend, addend)
+
+            # halve the number of points to multiply by
+            n >>= 1
+
         return result
