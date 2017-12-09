@@ -1,5 +1,7 @@
 """ Modeled after https://github.com/andreacorbellini/ecc/blob/master/logs/common.py"""
 
+import random
+
 def inverse_mod(n, p):
     """
     Returns a n_inv such that (n * n_inv) === 1 modp
@@ -30,22 +32,30 @@ def inverse_mod(n, p):
 class EllipticCurve:
     """ Equation of the form y^2=x^3+ax+b """
     """ A point being None means that it is the point at infinity (e.g 0) """
-    def __init__(self, a, b, n):
+    def __init__(self, a, b, n, g):
+        """
+        a & b : parameters on the curve
+        n : order of the cyclic subgroup (pregenerated using schoof's algorithm)
+        g : the base point
+        """
         self.field = field
         self.a = a
         self.b = b
         self.n = n
+        self.g = g
+        self.d = random.randrange(1, self.n) # private key, randomly generated
 
-        # making sure the parameters are good
+        # making sure the parameters are valid
         assert pow(2, field - 1, field) == 1
         assert (4 * a * a * a + 27 * b * b) % field != 0
-
-    def add_pub_keys(g, n):
-        self.g = g
-
-        # make sure keys are valid
         assert self.is_on_curve(g)
         assert self.mult(n, g) is None
+
+    def get_pub_key(self):
+        return self.mult_point(self.g, self.d)
+
+    def gen_shared(self, other_point):
+        self.shared = self.mult_point(self.g, self.d, starting_point=other_point)
 
     def is_on_curve(self, point):
         if point is None:
@@ -56,7 +66,7 @@ class EllipticCurve:
         lhs = y * y
         return (lhs - rhs) % self.field == 0
 
-    def add_points(point1, point2):
+    def add_points(self, point1, point2):
         assert self.is_on_curve(point1)
         assert self.is_on_curve(point2)
         
@@ -102,7 +112,7 @@ class EllipticCurve:
         assert self.is_on_curve(result)
         return result
 
-    def mult_point(self, point, n):
+    def mult_point(self, point, n, starting_point=None):
         """ returns n * point i.e. point added to itself n times """
         
         if n % self.n == 0 or point is None:
@@ -111,7 +121,7 @@ class EllipticCurve:
         if n < 0: # go the opposite way
             return self.neg_point(self.mult(-n, point))
 
-        result = None
+        result = starting_point
         addend = point # addend is a fancy name for an addition operand
 
         while n:
