@@ -32,8 +32,9 @@ def inverse_mod(n, p):
 class EllipticCurve:
     """ Equation of the form y^2=x^3+ax+b """
     """ A point being None means that it is the point at infinity (e.g 0) """
-    def __init__(self, a, b, n, g):
+    def __init__(self, field, a, b, n, g):
         """
+        field : size of the finite field
         a & b : parameters on the curve
         n : order of the cyclic subgroup (pregenerated using schoof's algorithm)
         g : the base point
@@ -43,7 +44,7 @@ class EllipticCurve:
         self.b = b
         self.n = n
         self.g = g
-        self.d = random.randrange(1, self.n) # private key, randomly generated
+        self._d = random.randrange(1, self.n) # private key, randomly generated
 
         # making sure the parameters are valid
         assert pow(2, field - 1, field) == 1
@@ -52,10 +53,10 @@ class EllipticCurve:
         assert self.mult(n, g) is None
 
     def get_pub_key(self):
-        return self.mult_point(self.g, self.d)
+        return self.mult_point(self.g, self._d)
 
     def gen_shared(self, other_point):
-        self.shared = self.mult_point(self.g, self.d, starting_point=other_point)
+        self._shared = self.mult_point(self.g, self._d, starting_point=other_point)
 
     def is_on_curve(self, point):
         if point is None:
