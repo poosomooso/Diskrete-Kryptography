@@ -50,7 +50,7 @@ class EllipticCurve:
         assert pow(2, field - 1, field) == 1
         assert (4 * a * a * a + 27 * b * b) % field != 0
         assert self.is_on_curve(g)
-        assert self.mult(n, g) is None
+        assert self.mult_point(g, n) is None
 
     def get_pub_key(self):
         return self.mult_point(self.g, self._d)
@@ -120,14 +120,14 @@ class EllipticCurve:
             return None
 
         if n < 0: # go the opposite way
-            return self.neg_point(self.mult(-n, point))
+            return self.neg_point(self.mult_point(point, -n))
 
         result = starting_point
         addend = point # addend is a fancy name for an addition operand
 
         while n:
             if n & 1:
-                result = self.add(result, addend)
+                result = self.add_points(result, addend)
 
             # double the addend
             addend = self.add_points(addend, addend)
@@ -136,3 +136,11 @@ class EllipticCurve:
             n >>= 1
 
         return result
+
+e_curve = EllipticCurve(
+    field=10177,
+    a=1,
+    b=-1,
+    g=(1, 1),
+    n=10331,
+)
