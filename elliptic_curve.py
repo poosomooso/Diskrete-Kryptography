@@ -56,7 +56,7 @@ class EllipticCurve:
         return self.mult_point(self.g, self._d)
 
     def gen_shared(self, other_point):
-        self._shared = self.mult_point(self.g, self._d, starting_point=other_point)
+        self._shared = self.mult_point(other_point, self._d)
 
     def is_on_curve(self, point):
         if point is None:
@@ -113,7 +113,7 @@ class EllipticCurve:
         assert self.is_on_curve(result)
         return result
 
-    def mult_point(self, point, n, starting_point=None):
+    def mult_point(self, point, n):
         """ returns n * point i.e. point added to itself n times """
         
         if n % self.n == 0 or point is None:
@@ -122,7 +122,7 @@ class EllipticCurve:
         if n < 0: # go the opposite way
             return self.neg_point(self.mult_point(point, -n))
 
-        result = starting_point
+        result = None
         addend = point # addend is a fancy name for an addition operand
 
         while n:
